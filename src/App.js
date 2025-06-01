@@ -1,17 +1,68 @@
-import React from 'react'
-import NavBar from './Components/NavBar/NavBar'
-import JobBlock from './Components/JobBlock/JobBlock'
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import NavBar from "./Components/NavBar/NavBar";
+import JobBlock from "./Components/JobBlock/JobBlock";
+import FilterBar from "./Components/JobBlock/FilterBar";
 import Chip from '@mui/material/Chip';
+import "./App.css"
 
-const App = () => {
+function App() {
+  const [allJobs, setAllJobs] = useState([]);
+  const [filteredJobs, setFilteredJobs] = useState([]);
+  const [filters, setFilters] = useState({
+    profile: "",
+    location: "",
+    duration: "",
+  });
+
+  useEffect(() => {
+    const fetchJobs = async () => {
+      try {
+        const res = await axios.get("https://internshala.com/hiring/search");
+        const jobs = Object.values(res.data.internships_meta);
+        setAllJobs(jobs);
+        setFilteredJobs(jobs);
+      } catch (error) {
+        console.error("Error fetching internships:", error);
+      }
+    };
+
+    fetchJobs();
+  }, []);
+
+  useEffect(() => {
+    const filtered = allJobs.filter((job) => {
+      const matchesProfile = filters.profile
+        ? job.title === filters.profile
+        : true;
+      const matchesLocation = filters.location
+        ? job.location_names?.includes(filters.location)
+        : true;
+      const matchesDuration = filters.duration
+        ? job.duration === filters.duration
+        : true;
+
+      return matchesProfile && matchesLocation && matchesDuration;
+    });
+
+    setFilteredJobs(filtered);
+  }, [filters, allJobs]);
+
   return (
-    <div><NavBar/>
-     <div><h1>Latest Summer Internships</h1>
-         <Chip label="119 Total Internships "  sx={{fontSize:"16px",fontWeight :500}} />
+    <div>
+      <NavBar />
+        <div className='header'><h1>Latest Summer Internships</h1>
+         <Chip label={`${allJobs.length} Total Internships`}  sx={{fontSize:"16px",fontWeight :500}} />
      </div>
-     <div><JobBlock/></div>
+
+      <FilterBar
+        filters={filters}
+        setFilters={setFilters}
+        allJobs={allJobs}
+      />
+      <JobBlock jobs={filteredJobs} />
     </div>
-  )
+  );
 }
 
-export default App
+export default App;
